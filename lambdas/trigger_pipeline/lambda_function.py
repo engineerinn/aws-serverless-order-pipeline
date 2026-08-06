@@ -1,6 +1,7 @@
 import boto3
 import os
 import json
+import logging
 
 stepfunctions = boto3.client('stepfunctions')
 

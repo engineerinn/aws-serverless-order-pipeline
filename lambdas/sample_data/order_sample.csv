@@ -1,0 +1,4 @@
+order_id,customer_id,product_name,quantity,unit_price,order_date,status
+ORD-001,CUST-123,Wireless Headphones,2,79.99,2024-01-15,pending
+ORD-002,CUST-456,USB-C Hub,1,34.99,2024-01-15,pending
+ORD-003,CUST-789,Mechanical Keyboard,1,129.99,2024-01-16,pending
