@@ -1,0 +1,4 @@
+{
+  "bucket": "<insert_your_bucket_name_where_you_upload_the_csv_file_to>",
+  "key": "cars_new.csv"
+}
