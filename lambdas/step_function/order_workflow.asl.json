@@ -1,37 +1,55 @@
 {
-  "StartAt": "ParseCSVFromS3",
+
+  "Comment": "E-Commerce Order Processing Workflow",
+  "StartAt": "ParseAndValidate",
   "States": {
-    "ParseCSVFromS3": {
+
+    "ParseAndValidate": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:parse_csv_from_s3",
-      "Next": "FilterValidBrands"
+      "Resource": "${ParseLambdaArn}",
+      "Retry": [{"ErrorEquals": ["Lambda.ServiceException"], "MaxAttempts": 2, "IntervalSeconds": 2}],
+      "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "NotifyFailure", "ResultPath": "$.error"}],
+      "Next": "EnrichOrders"
     },
-    "FilterValidBrands": {
+
+    "EnrichOrders": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:filter_valid_brands",
-      "ResultPath": "$.filter_results",
-      "Next": "SaveFilteredToDynamoDB"
+      "Resource": "${EnrichLambdaArn}",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "NotifyFailure", "ResultPath": "$.error"}],
+      "Next": "SaveToDynamoDB"
     },
-    "SaveFilteredToDynamoDB": {
+
+    "SaveToDynamoDB": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:save_filtered_to_dynamodb",
-      "Next": "GenerateReport"
+      "Resource": "${SaveLambdaArn}",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "NotifyFailure", "ResultPath": "$.error"}],
+      "Next": "ArchiveToS3"
     },
-    "GenerateReport": {
-      "Type": "Pass",
-      "Parameters": {
-        "summary.$": "$.filter_results.summary"
-      },
-      "ResultPath": "$.report",
-      "Next": "NotifyProcessingStatus"
-    },
-    "NotifyProcessingStatus": {
+
+    "ArchiveToS3": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:notify_processing_status",
-      "Parameters": {
-        "summary.$": "$.filter_results.summary"
-      },
+      "Resource": "${ArchiveLambdaArn}",
+      "Next": "NotifySuccess"
+    },
+
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "${NotifyLambdaArn}",
+      "Parameters": {"status": "SUCCESS", "summary.$": "$.summary"},
       "End": true
+    },
+
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "${NotifyLambdaArn}",
+      "Parameters": {"status": "FAILURE", "error.$": "$.error"},
+      "Next": "PipelineFailed"
+    },
+
+    "PipelineFailed": {
+      "Type": "Fail",
+      "Error": "OrderPipelineFailed",
+      "Cause": "One or more pipeline steps failed — check CloudWatch logs"
     }
   }
 }

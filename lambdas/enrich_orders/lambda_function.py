@@ -1,51 +1,29 @@
+#enrich_orders
+
 import json
-import boto3
-from datetime import datetime
+import logging
+import uuid
 
-VALID_BRANDS = {
-    "Kia", "Mercedes", "Alfa Romeo"
-}
+from datetime import datetime, timezone
+from typing import Any
 
-s3 = boto3.client('s3')
-REPORT_BUCKET = '<insert_report_output_s3_bucket_name_here>' # Create your own table. This will store reports about the data query
-def lambda_handler(event, context):
-    rows = event['rows']
-    filtered_rows = []
-    rejected_rows = []
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-    for row in rows:
-        brand = row['Brand'].strip().title()
-        model = row['Model'].strip().title()
+def enrich_order(order: dict) -> dict:
 
-        if brand in VALID_BRANDS:
-            row['Brand'] = brand
-            row['Model'] = model
-            row['timestamp'] = datetime.utcnow().isoformat()
-            filtered_rows.append(row)
-        else:
-            rejected_rows.append(row)
+    """Add computed fields to each order."""
 
-    summary = {
-        "accepted": len(filtered_rows),
-        "rejected": len(rejected_rows),
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    order["total_value"] = round(float(order["unit_price"]) * int(order["quantity"]), 2)
+    order["processed_at"] = datetime.now(timezone.utc).isoformat()
+    order["pipeline_run_id"] = str(uuid.uuid4())
 
-    # Upload report to S3 (Optional)
-    s3.put_object(
-        Bucket=REPORT_BUCKET,
-        Key='processing_report.json',
-        Body=json.dumps(summary),
-        ContentType='application/json'
-    )
+    return order
 
-    return {
-    "filtered_rows": filtered_rows,
-    "rejected_rows": rejected_rows,
-    "summary": {
-        "accepted": len(filtered_rows),
-        "rejected": len(rejected_rows),
-        "timestamp": datetime.utcnow().isoformat()
-    }
-}
+def lambda_handler(event: dict, context: Any) -> dict:
 
+    valid_orders = event["valid_orders"]
+    enriched = [enrich_order(o) for o in valid_orders]
+    logger.info(json.dumps({"event": "enrichment_complete", "count": len(enriched)}))
+
+    return {**event, "valid_orders": enriched}

@@ -1,7 +1,12 @@
+#trigger_pipeline
 import boto3
 import os
 import json
 import logging
+from typing import Any
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 stepfunctions = boto3.client('stepfunctions')
 
@@ -10,6 +15,8 @@ def lambda_handler(event, context):
     record = event['Records'][0]
     bucket = record['s3']['bucket']['name']
     key = record['s3']['object']['key']
+
+    logger.info(json.dumps({"event": "pipeline_triggered", "bucket": bucket, "key": key}))
 
     # Input format expected by your state machine
     input_payload = {
