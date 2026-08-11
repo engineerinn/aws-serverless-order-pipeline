@@ -1,36 +1,59 @@
-#trigger_pipeline
-import boto3
-import os
+# trigger_pipeline
+#
+# Entry point. S3 invokes this on every .csv landing in the raw-orders bucket
+# and it hands the location to the state machine.
+
 import json
 import logging
+import os
+
 from typing import Any
+from urllib.parse import unquote_plus
+
+import boto3
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-stepfunctions = boto3.client('stepfunctions')
+stepfunctions = boto3.client("stepfunctions")
 
-def lambda_handler(event, context):
-    # Parse S3 event
-    record = event['Records'][0]
-    bucket = record['s3']['bucket']['name']
-    key = record['s3']['object']['key']
+STEP_FUNCTION_ARN = os.environ.get("STEP_FUNCTION_ARN", "")
 
-    logger.info(json.dumps({"event": "pipeline_triggered", "bucket": bucket, "key": key}))
 
-    # Input format expected by your state machine
-    input_payload = {
-        "bucket": bucket,
-        "key": key
-    }
+def extract_s3_location(record: dict) -> dict:
+    """Pull bucket and key out of one S3 event record.
 
-    response = stepfunctions.start_execution(
-        stateMachineArn=os.environ['STEP_FUNCTION_ARN'],
-        input=json.dumps(input_payload)
-    )
+    S3 URL-encodes object keys in notifications: "jan orders.csv" arrives as
+    "jan+orders.csv" and would 404 on GetObject if passed through as-is.
+    """
 
     return {
-        'statusCode': 200,
-        'body': json.dumps("Step Function started successfully"),
-        'executionArn': response['executionArn']
+        "bucket": record["s3"]["bucket"]["name"],
+        "key": unquote_plus(record["s3"]["object"]["key"]),
+    }
+
+
+def lambda_handler(event: dict, context: Any) -> dict:
+    if not STEP_FUNCTION_ARN:
+        raise RuntimeError("STEP_FUNCTION_ARN environment variable is not set")
+
+    # S3 can batch several objects into one invocation.
+    executions = []
+
+    for record in event.get("Records", []):
+        payload = extract_s3_location(record)
+
+        logger.info(json.dumps({"event": "pipeline_triggered", **payload}))
+
+        response = stepfunctions.start_execution(
+            stateMachineArn=STEP_FUNCTION_ARN,
+            input=json.dumps(payload),
+        )
+
+        executions.append(response["executionArn"])
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps(f"Started {len(executions)} execution(s)"),
+        "executionArns": executions,
     }

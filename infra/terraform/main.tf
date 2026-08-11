@@ -10,6 +10,12 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+
+    # Zips each lambda folder at plan time — see lambdas.tf.
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
 
   # NOTE: this bucket must already exist before you run `terraform init`.
@@ -39,7 +45,7 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  name_prefix = "${var.project_name}-${var.environment}"
+  name_prefix   = "${var.project_name}-${var.environment}"
   bucket_suffix = data.aws_caller_identity.current.account_id
 }
 
@@ -73,6 +79,59 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "raw_orders" {
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
+    }
+  }
+}
+
+
+###############################################################################
+# S3 — archive of processed runs
+#
+# Deliberately a separate bucket from raw_orders. The archive step writes a
+# copy of every CSV it processes, and writing that back into the landing
+# bucket would re-trigger the pipeline on its own output.
+###############################################################################
+
+resource "aws_s3_bucket" "archive" {
+  bucket = "${local.name_prefix}-archive-${local.bucket_suffix}"
+}
+
+resource "aws_s3_bucket_public_access_block" "archive" {
+  bucket                  = aws_s3_bucket.archive.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "archive" {
+  bucket = aws_s3_bucket.archive.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# Archived runs are cold data — step them down to cheaper storage classes.
+resource "aws_s3_bucket_lifecycle_configuration" "archive" {
+  bucket = aws_s3_bucket.archive.id
+
+  rule {
+    id     = "tier-down-old-archives"
+    status = "Enabled"
+
+    filter {}
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 90
+      storage_class = "GLACIER_IR"
     }
   }
 }
@@ -195,6 +254,11 @@ resource "aws_sns_topic_subscription" "alerts_email" {
 output "raw_orders_bucket" {
   description = "Upload order CSVs here to trigger the pipeline"
   value       = aws_s3_bucket.raw_orders.bucket
+}
+
+output "archive_bucket" {
+  description = "Where processed CSVs and their JSON results are kept"
+  value       = aws_s3_bucket.archive.bucket
 }
 
 output "analytics_bucket" {

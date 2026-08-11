@@ -35,7 +35,7 @@ variable "environment" {
 variable "alert_email" {
   description = "Email address that receives pipeline success/failure notifications"
   type        = string
-  default = "hello@rinnadia.uk"
+  default     = "hello@rinnadia.uk"
 }
 
 variable "log_retention_days" {

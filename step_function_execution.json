@@ -1,4 +1,5 @@
 {
-  "bucket": "<insert_your_bucket_name_where_you_upload_the_csv_file_to>",
-  "key": "cars_new.csv"
+  "_comment": "Sample input for starting the state machine by hand from the Step Functions console. Replace the bucket with `terraform output -raw raw_orders_bucket` and upload lambdas/sample_data/order_sample.csv to it first.",
+  "bucket": "order-pipeline-dev-raw-orders-000000000000",
+  "key": "order_sample.csv"
 }

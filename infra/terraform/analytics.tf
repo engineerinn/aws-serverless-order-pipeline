@@ -21,7 +21,8 @@
 ###############################################################################
 
 resource "aws_s3_bucket" "athena_results" {
-  bucket = "${var.project_name}-athena-results-${var.environment}"
+  # Account ID suffix because bucket names are globally unique.
+  bucket = "${local.name_prefix}-athena-results-${local.bucket_suffix}"
 
   tags = {
     Project     = var.project_name
