@@ -1,0 +1,7 @@
+# Development and CI dependencies.
+#
+# Nothing here ships to Lambda — boto3 is already present in the Python 3.12
+# runtime, and the lambdas have no third-party imports beyond it.
+
+pytest==8.3.4
+boto3==1.35.90
