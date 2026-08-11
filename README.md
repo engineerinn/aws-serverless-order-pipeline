@@ -2,6 +2,12 @@
 > Event-driven, serverless pipeline for processing and analysing e-commerce orders at scale.
 Steps.
 
+**Project Objective**
+[Kasih Penjelasan]
+
+**Deployment Steps**
+[Kasih Penjelasan]
+
 1. Create / login into AWS account.
 2. Create / assign an IAM user for providing credentials to GitHub Actions and Terraform
 3.  
@@ -18,13 +24,29 @@ Steps.
 
 ## Tech Stack
 
-AWS: S3 · Lambda · Step Functions · DynamoDB · SQS · SNS · EventBridge
+**AWS** [Pada setiap AWS produk, harus dikasih penjelasan singkat dan rolenya dalam proyek ini!]
+1. S3
+2. Lambda
+3. Step Functions
+4. DynamoDB
+5. SQS (Simple Queue Service)
+6. SNS (Simple Notification Service)
+7. EventBridge
+8. API Gateway
+9. Glue
+10. Athena
+11. CloudWatch
+12. X-Ray
+13. Secrets Manager
 
-     API Gateway · Glue · Athena · CloudWatch · X-Ray · Secrets Manager
+**IaC**
 
-IaC: Terraform
+Terraform
+[kasih penjelasan singkat mengenai Terraform dan perannya dalam proyek ini]
 
-CI/CD: GitHub Actions
+**CI/CD**
+GitHub Actions
+[kasih penjelasan singkat mengenai GitHub Actions dan perannya dalam proyek ini]
 
 Language: Python 3.12
 
