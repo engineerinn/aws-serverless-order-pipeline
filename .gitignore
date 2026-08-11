@@ -217,3 +217,18 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .idea/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!example.tfvars
+
+# Lambda zips built by data.archive_file at plan time
+infra/terraform/.build/
