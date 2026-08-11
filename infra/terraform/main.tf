@@ -19,13 +19,12 @@ terraform {
   }
 
   # NOTE: this bucket must already exist before you run `terraform init`.
-  # Create it once by hand, then uncomment this block.
   backend "s3" {
-     bucket       = "rin-ecommerce-serverless-order-pipeline-930388172524"
-     key          = "order-pipeline/terraform.tfstate"
-     region       = "ap-southeast-2"
-     encrypt      = true
-     use_lockfile = true
+    bucket       = "rin-ecommerce-serverless-order-pipeline-930388172524"
+    key          = "order-pipeline/terraform.tfstate"
+    region       = "ap-southeast-2"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 
